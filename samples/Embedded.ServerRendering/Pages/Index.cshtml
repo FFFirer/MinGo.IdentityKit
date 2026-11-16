@@ -1,0 +1,26 @@
+@page
+@model Samples.EmbeddedServerRendering.IndexModel
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Local identity</title></head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <p>Signed in as @User.Identity.Name</p>
+    <form method="post" asp-page-handler="Logout"><button>Sign out</button></form>
+}
+else
+{
+    <div asp-validation-summary="All"></div>
+    <form method="post" asp-page-handler="Login">
+        <label>Username <input asp-for="UserName" autocomplete="username"></label>
+        <label>Password <input asp-for="Password" type="password" autocomplete="current-password"></label>
+        <button>Sign in</button>
+        @if (Model.RegistrationEnabled)
+        {
+            <button asp-page-handler="Register">Register</button>
+        }
+    </form>
+}
+</body>
+</html>

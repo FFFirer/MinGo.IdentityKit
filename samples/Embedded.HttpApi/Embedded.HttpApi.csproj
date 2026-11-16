@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../../src/MinGo.IdentityKit.EntityFrameworkCore.Sqlite/MinGo.IdentityKit.EntityFrameworkCore.Sqlite.csproj" />
+    <ProjectReference Include="../../src/MinGo.IdentityKit.HttpApi/MinGo.IdentityKit.HttpApi.csproj" />
+  </ItemGroup>
+</Project>

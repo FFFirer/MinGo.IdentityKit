@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="src/MinGo.IdentityKit.EntityFrameworkCore/MinGo.IdentityKit.EntityFrameworkCore.csproj" />
+  <Project Path="src/MinGo.IdentityKit/MinGo.IdentityKit.csproj" />
+  <Project Path="src/MinGo.IdentityKit.EntityFrameworkCore.Sqlite/MinGo.IdentityKit.EntityFrameworkCore.Sqlite.csproj" />
+  <Project Path="src/MinGo.IdentityKit.HttpApi/MinGo.IdentityKit.HttpApi.csproj" />
+  <Project Path="samples/Embedded.ServerRendering/Embedded.ServerRendering.csproj" />
+  <Project Path="samples/Embedded.HttpApi/Embedded.HttpApi.csproj" />
+  <Project Path="samples/Centralized.IdentityHost/Centralized.IdentityHost.csproj" />
+  <Project Path="tests/MinGo.IdentityKit.IntegrationTests/MinGo.IdentityKit.IntegrationTests.csproj" />
+</Solution>

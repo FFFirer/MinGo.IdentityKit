@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+TestResults/
+.local-dotnet/
+*.db
+*.db-shm
+*.db-wal
