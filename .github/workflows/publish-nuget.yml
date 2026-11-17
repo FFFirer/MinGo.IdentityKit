@@ -1,0 +1,76 @@
+name: Publish NuGet packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: nuget-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Read package version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          number='(0|[1-9][0-9]*)'
+          identifier="(${number}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+          if [[ ! "$version" =~ ^${number}\.${number}\.${number}(-${identifier}(\.${identifier})*)?$ ]]; then
+            echo "::error::Expected a tag such as v0.1.0 or v0.1.0-preview.1."
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore MinGo.IdentityKit.slnx
+
+      - name: Test
+        run: dotnet test MinGo.IdentityKit.slnx --configuration Release --no-restore -p:Version="$PACKAGE_VERSION" -p:ContinuousIntegrationBuild=true
+        env:
+          PACKAGE_VERSION: "${{ steps.version.outputs.value }}"
+
+      - name: Pack libraries
+        shell: bash
+        env:
+          PACKAGE_VERSION: "${{ steps.version.outputs.value }}"
+        run: |
+          for project in src/*/*.csproj; do
+            dotnet pack "$project" --configuration Release --no-build --no-restore \
+              --output "$RUNNER_TEMP/nuget-packages" \
+              -p:Version="$PACKAGE_VERSION" -p:ContinuousIntegrationBuild=true
+          done
+
+      - name: Sign in to NuGet.org with OIDC
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: "${{ secrets.NUGET_USER }}"
+
+      - name: Publish to NuGet.org
+        shell: bash
+        env:
+          NUGET_API_KEY: "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+        run: |
+          if [[ -z "$NUGET_API_KEY" ]]; then
+            echo "::error::NuGet login returned no publish credential."
+            exit 1
+          fi
+          dotnet nuget push "$RUNNER_TEMP/nuget-packages/*.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "$NUGET_API_KEY" --skip-duplicate

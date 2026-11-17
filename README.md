@@ -52,3 +52,27 @@ dotnet test MinGo.IdentityKit.slnx
 ```
 
 参见 [架构与部署](docs/architecture.md)、[HTTP API](docs/api.md) 和 [路线图](docs/roadmap.md)。
+
+## 发布 NuGet 包
+
+发布通过 GitHub Actions OIDC 和 [NuGet.org Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) 完成。工作流在推送包之前获取短期凭据。
+
+首次发布前，在 [NuGet.org Trusted Publishing](https://www.nuget.org/account/trustedpublishing) 添加 GitHub 策略。
+
+| 字段 | 值 |
+| --- | --- |
+| Repository Owner | `FFFirer` |
+| Repository | `MinGo.IdentityKit` |
+| Workflow File | `publish-nuget.yml` |
+| Environment | 留空 |
+
+策略的包范围须覆盖 `MinGo.IdentityKit`、`MinGo.IdentityKit.EntityFrameworkCore`、`MinGo.IdentityKit.EntityFrameworkCore.Sqlite` 和 `MinGo.IdentityKit.HttpApi`，并允许首次创建包和发布新版本。在 GitHub 仓库的 Settings → Secrets and variables → Actions 中添加仓库级 Secret `NUGET_USER`，值为 NuGet.org 个人资料用户名。
+
+策略配置完成后，推送版本标签会启动工作流。Actions 先运行集成测试，再发布 `src/` 下的四个库。整个发布使用同一版本，包括包之间的依赖。
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+预发布版本可使用 `v0.1.0-preview.1`。重复运行同一标签时跳过已发布的包。
