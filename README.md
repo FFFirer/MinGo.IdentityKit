@@ -45,6 +45,31 @@ await app.RunAsync();
 
 Razor Pages 宿主调用 `AddRazorPages()` 和 `MapRazorPages()`，并通过原生 `SignInManager` 登录和登出。公开注册入口使用 `PublicRegistration<TUser>`。
 
+### 接入已有 Identity 数据库的宿主
+
+ReverseProxy 等已有 `IdentityDbContext` 的应用可以使用原生角色和宿主存储。保留宿主现有的 `AppDbContext` 注册和迁移程序集，然后接线：
+
+```csharp
+builder.Services.AddIdentityKit()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>();
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequiredLength = 8;
+    options.User.RequireUniqueEmail = true;
+});
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "MinGo.Auth";
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.SlidingExpiration = true;
+});
+```
+
+这套接法由宿主管理数据库迁移和首个账号初始化。迁移已有部署时，从一致备份恢复到独立新库，再让宿主连接新库。从零部署时，使用宿主迁移初始化空库。已有邮箱登录、路由和响应格式由宿主的认证入口提供。旧 Cookie 延续还依赖原有 Data Protection 密钥及应用标识。参见 [MinGo 登录迁移计划](docs/mingo-login-migration-plan.md)。
+
 运行验证：
 
 ```powershell

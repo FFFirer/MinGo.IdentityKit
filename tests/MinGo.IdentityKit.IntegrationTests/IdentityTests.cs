@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using MinGo.IdentityKit;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -102,6 +103,8 @@ public sealed class IdentityTests : IDisposable
         where T : class =>
         new WebApplicationFactory<T>().WithWebHostBuilder(builder =>
         {
+            builder.ConfigureServices(services =>
+                services.AddDataProtection().UseEphemeralDataProtectionProvider());
             builder.UseSetting("ConnectionStrings:Identity", $"Data Source={Path.Combine(directory, name + ".db")};Pooling=False");
             builder.UseSetting("IdentityKit:Registration:Enabled", registration.ToString());
             builder.UseSetting("IdentityKit:SuperUser:Enabled", (adminPassword is not null).ToString());
