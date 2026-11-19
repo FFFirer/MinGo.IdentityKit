@@ -8,11 +8,33 @@ namespace MinGo.IdentityKit;
 
 public static class SuperUserInitialization
 {
-    public static async Task InitializeSuperUserAsync<TUser, TContext>(
+    public static Task InitializeSuperUserAsync<TUser, TContext>(
         this IServiceProvider services, CancellationToken cancellationToken = default)
+        where TUser : IdentityUser, new()
+        where TContext : DbContext =>
+        services.InitializeSuperUserAsync<TUser, TContext>(
+            async (provider, user) =>
+            {
+                var result = await provider.GetRequiredService<UserManager<TUser>>()
+                    .AddClaimAsync(user, new(IdentityKitRegistration.AdministratorClaim, "true"));
+                RequireSuccess(result);
+            },
+            async (provider, user) => (await provider.GetRequiredService<UserManager<TUser>>()
+                .GetClaimsAsync(user)).Any(claim =>
+                    claim.Type == IdentityKitRegistration.AdministratorClaim && claim.Value == "true"),
+            cancellationToken);
+
+    /// <summary>The host supplies privilege assignment and verifies the resulting access.</summary>
+    public static async Task InitializeSuperUserAsync<TUser, TContext>(
+        this IServiceProvider services,
+        Func<IServiceProvider, TUser, Task> grantAccess,
+        Func<IServiceProvider, TUser, Task<bool>> hasAccess,
+        CancellationToken cancellationToken = default)
         where TUser : IdentityUser, new()
         where TContext : DbContext
     {
+        ArgumentNullException.ThrowIfNull(grantAccess);
+        ArgumentNullException.ThrowIfNull(hasAccess);
         await using var scope = services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
         var options = provider.GetRequiredService<IOptions<IdentityKitOptions>>().Value.SuperUser;
@@ -29,8 +51,7 @@ public static class SuperUserInitialization
         var existing = await users.FindByNameAsync(options.UserName);
         if (existing is not null)
         {
-            var claims = await users.GetClaimsAsync(existing);
-            if (!claims.Any(c => c.Type == IdentityKitRegistration.AdministratorClaim && c.Value == "true"))
+            if (!await hasAccess(provider, existing))
                 throw new InvalidOperationException("The configured superuser name is occupied by another account.");
 
             logger.LogInformation("The configured superuser is already initialized.");
@@ -44,8 +65,9 @@ public static class SuperUserInitialization
 
         var user = new TUser { UserName = options.UserName, Email = options.Email };
         RequireSuccess(await users.CreateAsync(user, options.InitialPassword));
-        RequireSuccess(await users.AddClaimAsync(user, new(
-            IdentityKitRegistration.AdministratorClaim, "true")));
+        await grantAccess(provider, user);
+        if (!await hasAccess(provider, user))
+            throw new InvalidOperationException("The initialized account does not have the required host access.");
         await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("The configured superuser was created.");
     }

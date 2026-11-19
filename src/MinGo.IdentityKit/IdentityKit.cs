@@ -31,9 +31,20 @@ public static class IdentityKitRegistration
 
     public static IdentityBuilder AddIdentityKit(
         this IServiceCollection services, Action<IdentityKitOptions>? configure = null) =>
-        services.AddIdentityKit<IdentityUser>(configure);
+        services.AddIdentityKitLocalAccounts<IdentityUser>(configure);
 
     public static IdentityBuilder AddIdentityKit<TUser>(
+        this IServiceCollection services, Action<IdentityKitOptions>? configure = null)
+        where TUser : IdentityUser, new() =>
+        services.AddIdentityKitLocalAccounts<TUser>(configure);
+
+    /// <summary>Installs the complete local-account preset with default IdentityUser.</summary>
+    public static IdentityBuilder AddIdentityKitLocalAccounts(
+        this IServiceCollection services, Action<IdentityKitOptions>? configure = null) =>
+        services.AddIdentityKitLocalAccounts<IdentityUser>(configure);
+
+    /// <summary>Installs local Cookie authentication, native managers and preset policies.</summary>
+    public static IdentityBuilder AddIdentityKitLocalAccounts<TUser>(
         this IServiceCollection services, Action<IdentityKitOptions>? configure = null)
         where TUser : IdentityUser, new()
     {
